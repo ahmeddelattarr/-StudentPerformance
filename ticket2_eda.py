@@ -29,7 +29,7 @@ plt.show()
 
 features_to_plot = ['G1', 'G2', 'studytime', 'failures', 'absences']
 
-for feature in features_to_plot;
+for feature in features_to_plot:
     plt.figure()
     sns.scatterplot(data=df, x=feature, y='G3')
     plt.title(f'Relationship between {feature} and Final Grade (G3)')
