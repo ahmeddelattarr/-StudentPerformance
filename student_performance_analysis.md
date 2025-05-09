@@ -1,9 +1,8 @@
-
 # 📚 Student Performance Analysis - Full Project Documentation
 
 ## 📝 Objective
 
-Analyze student data and build regression models to predict students' final grades (G3).
+Analyze student data and build regression models to predict students' final grades (**G3**) using various machine learning techniques. The goal is to identify the best-performing model based on evaluation metrics.
 
 ---
 
@@ -19,7 +18,7 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.svm import SVR
-from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.model_selection import GridSearchCV
 
@@ -31,7 +30,7 @@ plt.rcParams["figure.figsize"] = (8, 5)
 - **pandas**: Data manipulation.
 - **numpy**: Mathematical operations.
 - **matplotlib/seaborn**: Data visualization.
-- **sklearn**: Machine Learning models and utilities.
+- **sklearn**: Machine learning models and utilities.
 
 ---
 
@@ -43,12 +42,14 @@ print(df.head())
 ```
 
 ### 📖 Theory
-- Data read from CSV. Separator is `;` (common in European CSV formats).
-- Initial look at the first 5 rows.
+- The dataset is loaded from a CSV file with `;` as the separator.
+- The first few rows are displayed to understand the structure of the data.
 
 ---
 
-## 🧹 Step 3: Data Inspection
+## 🧹 Step 3: Data Preprocessing
+
+### 1️⃣ Inspect the Data
 
 ```python
 print(df.isnull().sum())
@@ -56,24 +57,24 @@ print(df.dtypes)
 ```
 
 ### 📖 Theory
-- **Missing Values**: Detect null or missing values.
-- **Data Types**: Confirm the type of each column (numerical, categorical).
+- **Missing Values**: Check for null or missing values.
+- **Data Types**: Confirm the type of each column (numerical or categorical).
 
 ---
 
-## 🧹 Step 4: Handle Missing Values
+### 2️⃣ Handle Missing Values
 
 ```python
 df = df.dropna()
 ```
 
 ### 📖 Theory
-- **dropna()**: Removes any row with missing data.
-- **Note**: In real-world scenarios, sometimes filling missing data (imputation) is better than dropping rows.
+- **dropna()**: Removes rows with missing values.
+- **Alternative**: Impute missing values (e.g., mean, median) if dropping rows results in significant data loss.
 
 ---
 
-## 🏷️ Step 5: Convert Categorical Variables (Encoding)
+### 3️⃣ Encode Categorical Variables
 
 ```python
 df = pd.get_dummies(df, drop_first=True)
@@ -81,88 +82,209 @@ df = pd.get_dummies(df, drop_first=True)
 
 ### 📖 Theory
 - **One-Hot Encoding**: Converts categorical variables into binary columns (0/1).
-- **drop_first=True**: Avoids the **Dummy Variable Trap** (redundancy).
+- **drop_first=True**: Avoids redundancy by dropping one category.
 
 ---
 
-## 🔧 Step 6: Feature Scaling
+## 🔎 Step 4: Exploratory Data Analysis (EDA)
+
+### 1️⃣ Summary Statistics
 
 ```python
-scaler = StandardScaler()
-num_cols = ['age', 'absences', 'G1', 'G2']
-df[num_cols] = scaler.fit_transform(df[num_cols])
+print(df.describe())
 ```
 
 ### 📖 Theory
-- **StandardScaler**: Scales features to mean = 0 and std deviation = 1.
-- **Why?**: Models like SVM and Gradient Boosting are sensitive to feature scales.
+- Provides an overview of numerical features, including mean, standard deviation, and range.
+- Helps identify potential outliers and data distributions.
 
 ---
 
-## 🔎 Step 7: Train-Test Split
+### 2️⃣ Correlation Analysis
 
 ```python
-X = df.drop("G3", axis=1)
-y = df["G3"]
+correlation_matrix = df.corr(numeric_only=True)
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', linewidths=0.5)
+plt.title("Correlation Heatmap of Numerical Features")
+plt.show()
+```
+
+### 📖 Theory
+- **Correlation Matrix**: Identifies relationships between features and the target variable (`G3`).
+- **Why?**: Helps select features that are strongly correlated with `G3`.
+
+---
+
+### 3️⃣ Feature Relationships with Final Grade (G3)
+
+```python
+features_to_plot = ['G1', 'G2', 'studytime', 'failures', 'absences']
+for feature in features_to_plot:
+    sns.scatterplot(data=df, x=feature, y='G3')
+    plt.title(f'Relationship between {feature} and Final Grade (G3)')
+    plt.show()
+```
+
+### 📖 Theory
+- **Scatterplots**: Visualize how individual features impact `G3`.
+- **Key Insights**:
+  - `G1` and `G2`: Strong positive relationships with `G3`.
+  - `failures`: Negative relationship with `G3`.
+  - `studytime` and `absences`: Weak relationships but still relevant.
+
+---
+
+## 🔧 Step 5: Feature Selection & Scaling
+
+### 1️⃣ Feature Selection
+
+```python
+X = df[['G1', 'G2', 'studytime', 'failures', 'absences']]
+y = df['G3']
+```
+
+### 📖 Theory
+- Select features that are most relevant to predicting `G3`.
+
+---
+
+### 2️⃣ Train-Test Split
+
+```python
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 ```
 
 ### 📖 Theory
-- **X**: Features (inputs).
-- **y**: Target variable (final grade - G3).
-- **train_test_split**: Splits data into 80% training and 20% testing.
+- Splits the data into training (80%) and testing (20%) sets to evaluate model performance.
 
 ---
 
-## 🤖 Step 8: Model Building
-
-### 1️⃣ Linear Regression
+### 3️⃣ Feature Scaling
 
 ```python
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+```
+
+### 📖 Theory
+- Scales features to ensure they are on the same scale, which is crucial for models like SVR and Gradient Boosting.
+
+---
+
+## 🤖 Step 6: Model Training
+
+### Models Trained:
+1. **Support Vector Regression (SVR)**
+2. **Linear Regression**
+3. **Gradient Boosting Regression**
+4. **Decision Tree Regression (with Grid Search)**
+Here’s a small tutorial for each model in the requested format:
+
+---
+
+### 1️⃣ Support Vector Regression (SVR)
+
+```python
+from sklearn.svm import SVR
+
+# Initialize and train the SVR model
+svr = SVR(kernel='linear')
+svr.fit(X_train_scaled, y_train)
+
+# Predict on the test set
+y_pred_svr = svr.predict(X_test_scaled)
+```
+
+### 📖 Theory
+- **Support Vector Regression (SVR)**: A regression model that fits a hyperplane to predict the target variable while allowing some error within a margin (epsilon).
+- **Kernel**: The `linear` kernel is used here, but other kernels (e.g., `rbf`) can capture non-linear relationships.
+- **Why Use It?**: Effective for datasets with complex relationships and works well with scaled features.
+
+---
+
+### 2️⃣ Linear Regression
+
+```python
+from sklearn.linear_model import LinearRegression
+
+# Initialize and train the Linear Regression model
 lr = LinearRegression()
-lr.fit(X_train, y_train)
-y_pred_lr = lr.predict(X_test)
+lr.fit(X_train_scaled, y_train)
+
+# Predict on the test set
+y_pred_lr = lr.predict(X_test_scaled)
 ```
 
-**Theory**:
-Linear Regression tries to fit the best possible straight line (in multi-dimensional space if more than one feature) that minimizes the squared difference between the actual and predicted values (**Ordinary Least Squares** method). It's best for simple, linear relationships.
-
-### 2️⃣ Decision Tree Regressor
-
-```python
-dt = DecisionTreeRegressor(random_state=42)
-dt.fit(X_train, y_train)
-y_pred_dt = dt.predict(X_test)
-```
-
-**Theory**:
-A Decision Tree splits the data into regions by asking "yes/no" questions at each node. Each split aims to reduce the prediction error (often using **Mean Squared Error** in regression trees). Trees can capture non-linear patterns but are prone to **overfitting** if not controlled.
-
-### 3️⃣ Support Vector Regressor (SVR)
-
-```python
-svr = SVR()
-svr.fit(X_train, y_train)
-y_pred_svr = svr.predict(X_test)
-```
-
-**Theory**:
-SVR tries to fit the best hyperplane that predicts data points while allowing some error within a specified margin (called **epsilon**). It focuses on the data points closest to the hyperplane (**support vectors**) and is useful for datasets where the relationship between features and target is complex and non-linear.
-
-### 4️⃣ Gradient Boosting Regressor
-
-```python
-gbr = GradientBoostingRegressor(random_state=42)
-gbr.fit(X_train, y_train)
-y_pred_gbr = gbr.predict(X_test)
-```
-
-**Theory**:
-Gradient Boosting builds a series of small trees sequentially, where each new tree tries to correct the errors of the previous trees. It minimizes a loss function (like MSE) using **gradient descent**. This ensemble approach typically leads to high prediction accuracy, especially in structured/tabular data.
+### 📖 Theory
+- **Linear Regression**: A simple regression model that fits a straight line (or hyperplane) to minimize the squared differences between actual and predicted values.
+- **Why Use It?**: Easy to interpret and serves as a baseline model for linear relationships.
 
 ---
 
-## 🧮 Step 9: Model Evaluation
+### 3️⃣ Gradient Boosting Regression
+
+```python
+from sklearn.ensemble import GradientBoostingRegressor
+
+# Initialize and train the Gradient Boosting Regressor
+gbr = GradientBoostingRegressor(random_state=42)
+gbr.fit(X_train_scaled, y_train)
+
+# Predict on the test set
+y_pred_gbr = gbr.predict(X_test_scaled)
+```
+
+### 📖 Theory
+- **Gradient Boosting Regression**: An ensemble model that builds a series of small decision trees sequentially, where each tree corrects the errors of the previous ones.
+- **Why Use It?**: Highly accurate for structured/tabular data and robust to overfitting with proper tuning.
+
+---
+
+### 4️⃣ Decision Tree Regression with Grid Search
+
+```python
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.model_selection import GridSearchCV
+
+# Define the parameter grid
+param_grid = {
+    'max_depth': [3, 5, 7, 10],
+    'min_samples_split': [5, 10],
+    'min_samples_leaf': [2, 4],
+    'max_features': ['sqrt', 'log2']
+}
+
+# Initialize the Decision Tree Regressor
+decision_tree = DecisionTreeRegressor(random_state=42)
+
+# Perform Grid Search to find the best parameters
+grid_search = GridSearchCV(estimator=decision_tree, param_grid=param_grid, cv=5, verbose=True)
+grid_search.fit(X_train, y_train)
+
+# Get the best model and predict on the test set
+best_decision_tree = grid_search.best_estimator_
+y_pred_dt = best_decision_tree.predict(X_test)
+```
+
+### 📖 Theory
+- **Decision Tree Regression**: Splits data into regions based on feature thresholds. Each split reduces prediction error.
+- **Grid Search**: Tunes hyperparameters (e.g., tree depth, minimum samples per split) to find the best-performing model.
+- **Why Use It?**: Captures non-linear patterns and is interpretable but requires tuning to avoid overfitting.
+
+---
+
+### Summary of Models:
+- **SVR**: Best for datasets with complex relationships and scaled features.
+- **Linear Regression**: A simple and interpretable baseline model.
+- **Gradient Boosting**: Highly accurate and robust for structured data.
+- **Decision Tree**: Captures non-linear patterns but requires careful tuning.
+
+---
+
+## 🧮 Step 7: Model Evaluation
+
+### Evaluation Metrics:
 
 ```python
 def evaluate_model(y_true, y_pred):
@@ -170,53 +292,57 @@ def evaluate_model(y_true, y_pred):
     mae = mean_absolute_error(y_true, y_pred)
     r2 = r2_score(y_true, y_pred)
     return mse, mae, r2
+```
 
-metrics_lr = evaluate_model(y_test, y_pred_lr)
-metrics_dt = evaluate_model(y_test, y_pred_dt)
-metrics_svr = evaluate_model(y_test, y_pred_svr)
-metrics_gbr = evaluate_model(y_test, y_pred_gbr)
+- **RMSE**: Penalizes large errors more heavily.
+- **MAE**: Measures average absolute error.
+- **R²**: Indicates how well the model explains the variance in the data.
+
+---
+
+## 🏆 Step 8: Model Comparison
+
+### Compare Models:
+
+```python
+models = {
+    "SVR": results_svr,
+    "Linear Regression": results_lr,
+    "Gradient Boosting Regression": results_gbr,
+    "Decision Tree Regression": results_dt
+}
+
+metric_to_plot = 'RMSE'  # or MAE or R²
+
+# Extracting the values for the chosen metric from each model
+metric_values = {model: metrics[metric_to_plot] for model, metrics in models.items()}
+
+# Plotting the bar chart for the selected metric
+plt.figure(figsize=(10, 6))
+plt.barh(list(metric_values.keys()), list(metric_values.values()), color='skyblue')
+plt.xlabel(f"{metric_to_plot} Value", fontsize=12)
+plt.ylabel("Models", fontsize=12)
+plt.title(f"Comparison of Models based on {metric_to_plot}", fontsize=14)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
 ```
 
 ### 📖 Theory
-- **MSE (Mean Squared Error)**: Penalizes large errors.
-- **MAE (Mean Absolute Error)**: Average of absolute errors.
-- **R² Score**: Proportion of variance explained by the model (closer to 1 is better).
+- **RMSE**: Prioritized for selecting the best model as it penalizes large errors.
+- **MAE**: Useful for understanding average error magnitude.
+- **R²**: Supplementary metric to evaluate explanatory power.
 
 ---
 
-## 🏆 Step 10: Model Comparison
+## ✅ Best Model
 
-Compare the metrics (MSE, MAE, R²) across all models to choose the best performer.
-
-**Usually:**
-- Lower **MSE** & **MAE** = Better.
-- Higher **R²** = Better.
-
----
-
-## 📝 Final Notes
-
-- **Linear Regression** → Simple baseline, good for linear relationships.
-- **Decision Tree** → Captures non-linear patterns, easy to interpret, but can overfit.
-- **SVR** → Effective for complex, non-linear data but slower on large datasets.
-- **Gradient Boosting** → Often delivers the best accuracy for structured/tabular data.
+Based on the evaluation metrics:
+- **Gradient Boosting Regression** is the best model because it has:
+  - The **lowest RMSE** (smallest average error magnitude).
+  - The **highest R²** (best explanatory power).
+  - Competitive MAE compared to other models.
 
 ---
 
-## 📌 Summary Diagram
-
-**Flow**:
-
-```text
-Data → Cleaning → Encoding → Scaling → Split → Model Training → Evaluation → Selection
-```
-
----
-
-## ✅ Ready for Exam
-
-This document fully covers:
-- Data Preprocessing concepts.
-- Theory behind regression models.
-- Detailed explanation of how each model works.
-- Evaluation metrics.
+This detailed documentation provides a comprehensive overview of the project, from data preprocessing to model evaluation and selection.
